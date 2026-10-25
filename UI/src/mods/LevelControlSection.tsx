@@ -84,8 +84,10 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
     if (!infoLayout || !selectedPanel || window.innerWidth === 0 || window.innerHeight === 0)
       return null;
 
+    const selectedPanelRight = selectedPanel.getBoundingClientRect().right;
+
     return {
-      x: Math.min(0.92, (1.5 * infoLayout.offsetLeft + selectedPanel.offsetWidth + 20) / window.innerWidth),
+      x: Math.min(0.92, (selectedPanelRight + 8) / window.innerWidth),
       y: Math.max(0.02, Math.min(0.92, (infoLayout.offsetTop + 8) / window.innerHeight)),
     };
   };
