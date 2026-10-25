@@ -165,7 +165,6 @@ namespace Level_Control
         private NativeArray<Entity> m_BulkBuildings;
         private int m_PrefabIndex;
         private int m_BulkIndex;
-        private int m_BulkChanged;
         private bool m_LockAllPending;
         private bool m_CatalogReady;
 
@@ -360,7 +359,6 @@ namespace Level_Control
         {
             m_BulkBuildings = m_BuildingQuery.ToEntityArray(Allocator.Persistent);
             m_BulkIndex = 0;
-            m_BulkChanged = 0;
             if (m_BulkBuildings.Length == 0)
                 FinishLockAll();
         }
@@ -369,10 +367,7 @@ namespace Level_Control
         {
             int end = Math.Min(m_BulkIndex + kBuildingBatchSize, m_BulkBuildings.Length);
             for (; m_BulkIndex < end; m_BulkIndex++)
-            {
-                if (SetLocked(m_BulkBuildings[m_BulkIndex], true))
-                    m_BulkChanged++;
-            }
+                SetLocked(m_BulkBuildings[m_BulkIndex], true);
 
             if (m_BulkIndex < m_BulkBuildings.Length)
                 return;
@@ -385,7 +380,6 @@ namespace Level_Control
             m_BulkBuildings.Dispose();
             m_BulkBuildings = default;
             m_LockAllPending = false;
-            Mod.log.Info($"Locked {m_BulkChanged} buildings.");
             RefreshSelectedInfo();
         }
 

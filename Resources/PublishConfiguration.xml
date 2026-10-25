@@ -23,10 +23,6 @@ Le cadenas empêche un bâtiment de monter automatiquement de niveau. Dans les p
 
 Level Control ne propose que les prefabs compatibles avec le bâtiment sélectionné. Un niveau peut être indisponible si le jeu ne possède aucun prefab correspondant à sa zone, son emplacement, son accès ou ses propriétés.
 
-Author: Espur04
-
-Source Code: https://github.com/Espur04/Level-Control
-
 ---
 
 Auteur : Espur04
@@ -36,7 +32,7 @@ Code source : https://github.com/Espur04/Level-Control
   <Thumbnail Value="Resources/Thumbnail.png" />
   <Tag Value="Code Mod" />
   <ModVersion Value="1.0.0" />
-  <GameVersion Value="1.6.2*" />
+  <GameVersion Value="1.*" />
   <Dependency Id="74417" />
   <RequiredDLC Value="" />
   <ChangeLog>Initial release.</ChangeLog>
