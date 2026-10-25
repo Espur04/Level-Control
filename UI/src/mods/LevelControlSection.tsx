@@ -72,6 +72,7 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
     selectionKey: "",
     ...panelFallbackPosition,
   });
+  const [panelDebug, setPanelDebug] = React.useState("Waiting for panel layout");
   const positionReady = measuredPosition.selectionKey === selectionKey;
 
   const findSelectedPanel = () => Array.from(
@@ -91,6 +92,40 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
       y: Math.max(0.02, Math.min(0.92, (infoLayout.offsetTop + 8) / window.innerHeight)),
     };
   };
+
+  React.useEffect(() => {
+    if (!isOpen)
+      return;
+
+    const updateDebug = () => {
+      const infoLayout = document.querySelector(`.${infoLayoutTheme.infoLayout}`) as HTMLElement | null;
+      const selectedPanel = findSelectedPanel();
+      const levelPanel = document.getElementById("level-control-secondary");
+      const layoutRect = infoLayout?.getBoundingClientRect();
+      const selectedRect = selectedPanel?.getBoundingClientRect();
+      const levelRect = levelPanel?.getBoundingClientRect();
+      const target = getAlignedPosition();
+      const candidates = Array.from(
+        document.querySelectorAll<HTMLElement>(`.${nativePanelTheme.panel}.${selectedInfoTheme.selectedInfoPanel}`),
+      ).slice(0, 4).map((panel, index) => {
+        const rect = panel.getBoundingClientRect();
+        return `${index} id=${panel.id || "-"} x=${Math.round(rect.left)}..${Math.round(rect.right)} w=${Math.round(rect.width)}`;
+      }).join("\n");
+
+      setPanelDebug([
+        `LEVEL CONTROL DEBUG ${window.innerWidth}x${window.innerHeight}`,
+        `layout off=${infoLayout?.offsetLeft ?? "?"},${infoLayout?.offsetTop ?? "?"} rect=${Math.round(layoutRect?.left ?? 0)},${Math.round(layoutRect?.top ?? 0)}`,
+        `anchor=${selectedPanel?.id || selectedPanel?.tagName || "none"} offW=${selectedPanel?.offsetWidth ?? "?"} rect=${Math.round(selectedRect?.left ?? 0)}..${Math.round(selectedRect?.right ?? 0)}`,
+        `target=${target ? `${Math.round(target.x * window.innerWidth)},${Math.round(target.y * window.innerHeight)} (${target.x.toFixed(3)},${target.y.toFixed(3)})` : "none"}`,
+        `panel=${levelRect ? `${Math.round(levelRect.left)},${Math.round(levelRect.top)}..${Math.round(levelRect.right)},${Math.round(levelRect.bottom)}` : "not mounted"}`,
+        candidates || "No matching panel elements",
+      ].join("\n"));
+    };
+
+    updateDebug();
+    const interval = window.setInterval(updateDebug, 100);
+    return () => window.clearInterval(interval);
+  }, [isOpen, selectionKey, positionReady]);
 
   React.useEffect(() => {
     if (!isOpen || !isCurrentSelection)
@@ -147,106 +182,127 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
         />
       </PanelSection>
       {isOpen && isCurrentSelection && positionReady && <Portal>
-        <Panel
-          id="level-control-secondary"
-          key={`${selectionKey}:${measuredPosition.x}:${measuredPosition.y}`}
-          draggable={true}
-          focusKey={FOCUS_AUTO}
-          header={translate("Level_Control.UI.PanelTitle")}
-          onClose={() => {
-            setMeasuredPosition({ selectionKey: "", ...panelFallbackPosition });
-            panelVisible.update(false);
-          }}
-          initialPosition={{ x: measuredPosition.x, y: measuredPosition.y }}
-          style={{ width: "420rem", maxWidth: "calc(100vw - 24rem)", maxHeight: "80vh" }}
-        >
-          <PanelSection>
-            <div
-              style={{
-                display: "flex",
-                width: "100%",
-                minHeight: "44rem",
-                alignItems: "center",
-                justifyContent: "space-between",
-                boxSizing: "border-box",
-                padding: "4rem 12rem",
-                gap: "12rem",
-              }}
-            >
-              <span style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}>
-                {translate("Level_Control.UI.LevelLabel")}
-              </span>
-              <FocusDisabled>
-                <div
-                  style={{
-                    display: "flex",
-                    flex: "0 0 auto",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    gap: "4rem",
-                    overflow: "visible",
-                  }}
-                >
-                  {levels.map(level => {
-                    const passed = level <= props.targetLevel;
+        <>
+          <Panel
+            id="level-control-secondary"
+            key={`${selectionKey}:${measuredPosition.x}:${measuredPosition.y}`}
+            draggable={true}
+            focusKey={FOCUS_AUTO}
+            header={translate("Level_Control.UI.PanelTitle")}
+            onClose={() => {
+              setMeasuredPosition({ selectionKey: "", ...panelFallbackPosition });
+              panelVisible.update(false);
+            }}
+            initialPosition={{ x: measuredPosition.x, y: measuredPosition.y }}
+            style={{ width: "420rem", maxWidth: "calc(100vw - 24rem)", maxHeight: "80vh" }}
+          >
+            <PanelSection>
+              <div
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  minHeight: "44rem",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  boxSizing: "border-box",
+                  padding: "4rem 12rem",
+                  gap: "12rem",
+                }}
+              >
+                <span style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}>
+                  {translate("Level_Control.UI.LevelLabel")}
+                </span>
+                <FocusDisabled>
+                  <div
+                    style={{
+                      display: "flex",
+                      flex: "0 0 auto",
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                      gap: "4rem",
+                      overflow: "visible",
+                    }}
+                  >
+                    {levels.map(level => {
+                      const passed = level <= props.targetLevel;
 
-                    return (
-                      <Button
-                        key={level}
-                        variant="flat"
-                        focusKey={FOCUS_AUTO}
-                        selected={level === props.targetLevel}
-                        onSelect={() => trigger(mod.id, "SetLevel", level)}
-                        style={{
-                          display: "flex",
-                          flex: "0 0 34rem",
-                          width: "34rem",
-                          minWidth: "34rem",
-                          maxWidth: "34rem",
-                          height: "30rem",
-                          padding: 0,
-                          borderRadius: "3rem",
-                          overflow: "hidden",
-                          boxSizing: "border-box",
-                        }}
-                      >
-                        <span
+                      return (
+                        <Button
+                          key={level}
+                          variant="flat"
+                          focusKey={FOCUS_AUTO}
+                          selected={level === props.targetLevel}
+                          onSelect={() => trigger(mod.id, "SetLevel", level)}
                           style={{
-                            width: "100%",
-                            height: "100%",
                             display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
+                            flex: "0 0 34rem",
+                            width: "34rem",
+                            minWidth: "34rem",
+                            maxWidth: "34rem",
+                            height: "30rem",
+                            padding: 0,
                             borderRadius: "3rem",
-                            backgroundColor: passed ? "#00ec78" : "rgba(44, 50, 60, 0.78)",
-                            color: passed ? "#07150c" : "#f4f4f4",
-                            pointerEvents: "none",
+                            overflow: "hidden",
+                            boxSizing: "border-box",
                           }}
                         >
-                          {level}
-                        </span>
-                      </Button>
-                    );
-                  })}
-                  <div style={{ display: "flex", flex: "0 0 40rem", width: "40rem", height: "40rem", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
-                    <ToolButton
-                      id="level-control-lock"
-                      focusKey={FOCUS_AUTO}
-                      src={props.locked ? controlIcons.locked : controlIcons.unlocked}
-                      selected={props.locked}
-                      multiSelect={false}
-                      disabled={false}
-                      tooltip={props.locked ? translate("Level_Control.UI.UnlockLevel") : translate("Level_Control.UI.LockLevel")}
-                      className={toolButtonTheme.button}
-                      onSelect={() => trigger(mod.id, "ToggleLock")}
-                      style={{ width: "36rem", height: "36rem", padding: "3rem", overflow: "visible" }}
-                    />
+                          <span
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: "3rem",
+                              backgroundColor: passed ? "#00ec78" : "rgba(44, 50, 60, 0.78)",
+                              color: passed ? "#07150c" : "#f4f4f4",
+                              pointerEvents: "none",
+                            }}
+                          >
+                            {level}
+                          </span>
+                        </Button>
+                      );
+                    })}
+                    <div style={{ display: "flex", flex: "0 0 40rem", width: "40rem", height: "40rem", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
+                      <ToolButton
+                        id="level-control-lock"
+                        focusKey={FOCUS_AUTO}
+                        src={props.locked ? controlIcons.locked : controlIcons.unlocked}
+                        selected={props.locked}
+                        multiSelect={false}
+                        disabled={false}
+                        tooltip={props.locked ? translate("Level_Control.UI.UnlockLevel") : translate("Level_Control.UI.LockLevel")}
+                        className={toolButtonTheme.button}
+                        onSelect={() => trigger(mod.id, "ToggleLock")}
+                        style={{ width: "36rem", height: "36rem", padding: "3rem", overflow: "visible" }}
+                      />
+                    </div>
                   </div>
-                </div>
-              </FocusDisabled>
-            </div>
-          </PanelSection>
-        </Panel>
+                </FocusDisabled>
+              </div>
+            </PanelSection>
+          </Panel>
+          <div
+            style={{
+              position: "fixed",
+              right: "12px",
+              bottom: "120px",
+              zIndex: 999999,
+              padding: "8px 10px",
+              background: "rgba(0,0,0,0.92)",
+              border: "1px solid #00cfff",
+              color: "#ffffff",
+              fontFamily: "monospace",
+              fontSize: "13px",
+              lineHeight: "18px",
+              whiteSpace: "pre",
+              pointerEvents: "none",
+            }}
+          >
+            {panelDebug}
+          </div>
+        </>
       </Portal>}
       </>}
     </>
