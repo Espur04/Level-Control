@@ -74,20 +74,19 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
   });
   const positionReady = measuredPosition.selectionKey === selectionKey;
 
+  const findSelectedPanel = () => Array.from(
+    document.querySelectorAll<HTMLElement>(`.${nativePanelTheme.panel}.${selectedInfoTheme.selectedInfoPanel}`),
+  ).find(panel => panel.id !== "level-control-secondary" && panel.offsetWidth > 0) ?? null;
+
   const getAlignedPosition = () => {
     const infoLayout = document.querySelector(`.${infoLayoutTheme.infoLayout}`) as HTMLElement | null;
-    const selectedPanel = (infoLayout?.querySelector(`.${selectedInfoTheme.selectedInfoPanel}`)
-      || Array.from(document.querySelectorAll<HTMLElement>(`.${nativePanelTheme.panel}.${selectedInfoTheme.selectedInfoPanel}`))
-        .find(panel => panel.id !== "level-control-secondary")) as HTMLElement | null;
+    const selectedPanel = findSelectedPanel();
     if (!infoLayout || !selectedPanel || window.innerWidth === 0 || window.innerHeight === 0)
       return null;
 
-    const panelBounds = selectedPanel.getBoundingClientRect();
-    const layoutBounds = infoLayout.getBoundingClientRect();
-
     return {
-      x: Math.min(0.92, (panelBounds.right + 12) / window.innerWidth),
-      y: Math.max(0.02, Math.min(0.92, (layoutBounds.top - 12) / window.innerHeight)),
+      x: Math.min(0.92, (1.5 * infoLayout.offsetLeft + selectedPanel.offsetWidth + 20) / window.innerWidth),
+      y: Math.max(0.02, Math.min(0.92, (infoLayout.offsetTop + 8) / window.innerHeight)),
     };
   };
 
@@ -115,7 +114,7 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
       window.requestAnimationFrame(updatePosition);
     });
     const infoLayout = document.querySelector(`.${infoLayoutTheme.infoLayout}`) as HTMLElement | null;
-    const selectedPanel = infoLayout?.querySelector(`.${selectedInfoTheme.selectedInfoPanel}`);
+    const selectedPanel = findSelectedPanel();
     if (infoLayout)
       observer.observe(infoLayout);
     if (selectedPanel)
