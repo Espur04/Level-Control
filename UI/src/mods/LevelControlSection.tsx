@@ -87,7 +87,7 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
     const selectedPanelRight = selectedPanel.getBoundingClientRect().right;
 
     return {
-      x: Math.min(0.92, (selectedPanelRight + 8) / window.innerWidth),
+      x: Math.min(0.92, (selectedPanelRight + 1.5 * infoLayout.offsetLeft + 8) / window.innerWidth),
       y: Math.max(0.02, Math.min(0.92, (infoLayout.offsetTop + 8) / window.innerHeight)),
     };
   };
