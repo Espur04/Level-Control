@@ -1,0 +1,11 @@
+<Publish>
+  <ModId Value="" />
+  <DisplayName Value="Level Control" />
+  <ShortDescription Value="Choose and lock levels for growable buildings." />
+  <LongDescription>Choose a compatible level for individual growable buildings and lock it in place. Lock all existing buildings or automatically lock new buildings when they are placed.</LongDescription>
+  <Thumbnail Value="Resources/Thumbnail.png" />
+  <ModVersion Value="1.0.0" />
+  <GameVersion Value="1.6.*" />
+  <Dependency Id="74417" DisplayName="Unified Icon Library" Version="1.0.14" />
+  <AccessLevel Value="Public" />
+</Publish>
