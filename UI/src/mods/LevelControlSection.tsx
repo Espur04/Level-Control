@@ -51,6 +51,7 @@ const controlIcons = {
 };
 
 const levels = [1, 2, 3, 4, 5];
+const panelFallbackPosition = { x: 0.4, y: 0.08 };
 
 export const LevelControlSection = (componentList: Record<string, unknown>) => {
   componentList["Level_Control.LevelControlSelectionSection"] = (props: LevelControlSectionProps) => (
@@ -64,48 +65,72 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
   const { translate } = l10n.useLocalization();
   const isOpen = useValue(panelVisible);
   const selectedEntity = useValue(selectedInfo.selectedEntity$);
-  const [panelPosition, setPanelPosition] = React.useState({ x: 0.4, y: 0.08 });
   const isCurrentSelection = selectedEntity.index === props.buildingEntityIndex
     && selectedEntity.version === props.buildingEntityVersion;
+  const selectionKey = `${props.buildingEntityIndex}:${props.buildingEntityVersion}`;
+  const [measuredPosition, setMeasuredPosition] = React.useState({
+    selectionKey: "",
+    ...panelFallbackPosition,
+  });
+  const positionReady = measuredPosition.selectionKey === selectionKey;
 
   const getAlignedPosition = () => {
     const infoLayout = document.querySelector(`.${infoLayoutTheme.infoLayout}`) as HTMLElement | null;
-    const selectedPanel = document.querySelector(`.${nativePanelTheme.panel}.${selectedInfoTheme.selectedInfoPanel}`) as HTMLElement | null;
+    const selectedPanel = (infoLayout?.querySelector(`.${selectedInfoTheme.selectedInfoPanel}`)
+      || Array.from(document.querySelectorAll<HTMLElement>(`.${nativePanelTheme.panel}.${selectedInfoTheme.selectedInfoPanel}`))
+        .find(panel => panel.id !== "level-control-secondary")) as HTMLElement | null;
     if (!infoLayout || !selectedPanel || window.innerWidth === 0 || window.innerHeight === 0)
       return null;
 
+    const panelBounds = selectedPanel.getBoundingClientRect();
+    const layoutBounds = infoLayout.getBoundingClientRect();
+
     return {
-      x: Math.min(0.92, (1.5 * infoLayout.offsetLeft + selectedPanel.offsetWidth) / window.innerWidth),
-      y: Math.min(0.92, infoLayout.offsetTop / window.innerHeight),
+      x: Math.min(0.92, (panelBounds.right + 12) / window.innerWidth),
+      y: Math.max(0.02, Math.min(0.92, (layoutBounds.top - 12) / window.innerHeight)),
     };
   };
 
-  const alignedPosition = isOpen ? getAlignedPosition() : null;
-
   React.useEffect(() => {
-    if (!isOpen)
+    if (!isOpen || !isCurrentSelection)
       return;
 
+    let firstFrame = 0;
+    let secondFrame = 0;
     const updatePosition = () => {
       const position = getAlignedPosition();
-      if (!position)
+      if (!position) {
+        setMeasuredPosition({ selectionKey, ...panelFallbackPosition });
         return;
+      }
 
-      setPanelPosition(position);
+      setMeasuredPosition({ selectionKey, ...position });
     };
 
-    updatePosition();
-    const observer = new ResizeObserver(updatePosition);
-    const infoLayout = document.querySelector(`.${infoLayoutTheme.infoLayout}`);
+    firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(updatePosition);
+    });
+
+    const observer = new ResizeObserver(() => {
+      window.requestAnimationFrame(updatePosition);
+    });
+    const infoLayout = document.querySelector(`.${infoLayoutTheme.infoLayout}`) as HTMLElement | null;
+    const selectedPanel = infoLayout?.querySelector(`.${selectedInfoTheme.selectedInfoPanel}`);
     if (infoLayout)
       observer.observe(infoLayout);
-    window.addEventListener("resize", updatePosition);
+    if (selectedPanel)
+      observer.observe(selectedPanel);
+
+    const onResize = () => window.requestAnimationFrame(updatePosition);
+    window.addEventListener("resize", onResize);
 
     return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
       observer.disconnect();
-      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("resize", onResize);
     };
-  }, [isOpen]);
+  }, [isOpen, isCurrentSelection, selectionKey]);
 
   return (
     <>
@@ -132,14 +157,15 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
           }
         />
       </PanelSection>
-      {isOpen && isCurrentSelection && <Portal>
+      {isOpen && isCurrentSelection && positionReady && <Portal>
         <Panel
-          key={props.buildingEntityIndex}
+          id="level-control-secondary"
+          key={`${selectionKey}:${measuredPosition.x}:${measuredPosition.y}`}
           draggable={true}
           focusKey={FOCUS_AUTO}
           header={translate("Level_Control.UI.PanelTitle")}
           onClose={() => panelVisible.update(false)}
-          initialPosition={alignedPosition ?? panelPosition}
+          initialPosition={{ x: measuredPosition.x, y: measuredPosition.y }}
           style={{ width: "420rem", maxWidth: "calc(100vw - 24rem)", maxHeight: "80vh" }}
         >
           <PanelSection>
