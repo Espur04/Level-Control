@@ -112,24 +112,9 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
       secondFrame = window.requestAnimationFrame(updatePosition);
     });
 
-    const observer = new ResizeObserver(() => {
-      window.requestAnimationFrame(updatePosition);
-    });
-    const infoLayout = document.querySelector(`.${infoLayoutTheme.infoLayout}`) as HTMLElement | null;
-    const selectedPanel = findSelectedPanel();
-    if (infoLayout)
-      observer.observe(infoLayout);
-    if (selectedPanel)
-      observer.observe(selectedPanel);
-
-    const onResize = () => window.requestAnimationFrame(updatePosition);
-    window.addEventListener("resize", onResize);
-
     return () => {
       window.cancelAnimationFrame(firstFrame);
       window.cancelAnimationFrame(secondFrame);
-      observer.disconnect();
-      window.removeEventListener("resize", onResize);
     };
   }, [isOpen, isCurrentSelection, selectionKey]);
 
@@ -152,7 +137,10 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
                 disabled={false}
                 tooltip={translate("Level_Control.UI.OpenLevelControl")}
                 className={toolButtonTheme.button}
-                onSelect={() => panelVisible.update(!isOpen)}
+                onSelect={() => {
+                  setMeasuredPosition({ selectionKey: "", ...panelFallbackPosition });
+                  panelVisible.update(!isOpen);
+                }}
               />
             </FocusDisabled>
           }
@@ -165,7 +153,10 @@ const LevelControlPanel = (props: LevelControlSectionProps) => {
           draggable={true}
           focusKey={FOCUS_AUTO}
           header={translate("Level_Control.UI.PanelTitle")}
-          onClose={() => panelVisible.update(false)}
+          onClose={() => {
+            setMeasuredPosition({ selectionKey: "", ...panelFallbackPosition });
+            panelVisible.update(false);
+          }}
           initialPosition={{ x: measuredPosition.x, y: measuredPosition.y }}
           style={{ width: "420rem", maxWidth: "calc(100vw - 24rem)", maxHeight: "80vh" }}
         >
